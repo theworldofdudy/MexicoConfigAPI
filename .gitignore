@@ -1,0 +1,7 @@
+#General
+*.zip
+__pycache__/
+starter-template/*
+
+# Visual code
+.vscode/
