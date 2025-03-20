@@ -200,7 +200,7 @@ async def get_model(model_name: ModelName):
 
 @app.get("/param")
 async def read_param_file():
-    configClass = ConfigFileParser("paramval.dat")
+    configClass = ConfigFileParser("documents/paramval.dat")
     buffer = configClass.read_binary_file()
     gen_param, zones = configClass.parse_param_file(buffer)
     return {"bCSCUpperVersion:": gen_param[0] ,
@@ -219,7 +219,7 @@ async def read_param_file():
 
 @app.get("/titulos")
 async def read_param_file():
-    configClass = ConfigFileParser("titulosval.dat")
+    configClass = ConfigFileParser("documents/titulosval.dat")
     buffer = configClass.read_binary_file()
     data, baaTransferTimes = configClass.parse_titulos_file(buffer)
     print(baaTransferTimes)
