@@ -13,18 +13,38 @@ document.addEventListener("DOMContentLoaded", function () {
         fetch(`${API_URL}/param`)
             .then(response => response.json())
             .then(data => {
-                document.querySelector(".collection").innerHTML = "";
+                document.querySelector(".collection").innerHTML = ""; // Limpiar la colección previa
+
                 Object.entries(data).forEach(([key, value]) => {
                     const item = document.createElement("a");
                     item.href = "#!";
                     item.classList.add("collection-item");
-                    item.innerHTML = `<span class="badge">${value}</span>${key}`;
-                    document.querySelector(".collection").appendChild(item);
-                }); // ✅ Se cierra correctamente el forEach()
-                document.querySelector(".card-title").innerText = "";
-            }) // ✅ Se cierra correctamente el .then()
-            .catch(error => console.error("Error fetching data:", error)); // .catch() está fuera del bloque .then()
 
+                    // Si la clave es "zones" y tiene un array, creamos una sub-collection
+                    if (key === "zones" && Array.isArray(value)) {
+                        console.log("Zones detected");
+                        item.innerHTML = `<b>${key}</b>`; // Only title
+                        const subCollection = document.createElement("div");
+                        subCollection.classList.add("collection", "sub-collection");
+
+                        value.forEach(zone => {
+                            const subItem = document.createElement("a");
+                            subItem.href = "#!";
+                            subItem.classList.add("collection-item");
+                            subItem.textContent = zone; // Mostramos el contenido del array
+                            subCollection.appendChild(subItem);
+                        });
+
+                        item.appendChild(subCollection); // Agregamos la sub-colección al item principal
+                    } else {
+                        // Si no es "zones", agregar como un item normal con badge
+                        item.innerHTML = `<span class="badge">${value}</span>${key}`;
+                    }
+
+                    document.querySelector(".collection").appendChild(item);
+                });
+            })
+            .catch(error => console.error("Error fetching data:", error));
         /*         // Hacer la petición al API
         fetch(`${API_URL}/param`)
             .then(response => response.json())
@@ -48,9 +68,30 @@ document.addEventListener("DOMContentLoaded", function () {
                 const item = document.createElement("a");
                 item.href = "#!";
                 item.classList.add("collection-item");
-                item.innerHTML = `<span class="badge">${value}</span>${key}`;
-                document.querySelector(".collection").appendChild(item);
-            }); // ✅ Se cierra correctamente el forEach()
+                    // Si la clave es "TransferTimes" y tiene un array, creamos una sub-collection
+                    if (key.trim() === "TransferTimes") {
+                        console.log("Key detected: ", key, "Value:", value, "Type:", typeof value);
+                        console.log("TransferTimes detected");
+                        item.innerHTML = `<b>${key}</b>`; // Only title
+                        const subCollection = document.createElement("div");
+                        subCollection.classList.add("collection", "sub-collection");
+
+                        value.forEach(transfer  => {
+                            const subItem = document.createElement("a");
+                            subItem.href = "#!";
+                            subItem.classList.add("collection-item");
+                            subItem.textContent = transfer ; // Mostramos el contenido del array
+                            subCollection.appendChild(subItem);
+                        });
+
+                        item.appendChild(subCollection); // Agregamos la sub-colección al item principal
+                    } else {
+                        // Si no es "zones", agregar como un item normal con badge
+                        item.innerHTML = `<span class="badge">${value}</span>${key}`;
+                    }
+
+                    document.querySelector(".collection").appendChild(item);
+                }); // ✅ Se cierra correctamente el forEach()
             document.querySelector(".card-title").innerText = "";
         }) // ✅ Se cierra correctamente el .then()
         .catch(error => console.error("Error fetching data:", error)); // .catch() está fuera del bloque .then()

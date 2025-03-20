@@ -36,6 +36,8 @@ class ConfigFileParser(object):
 
         # Estructura tsICfgOriginDestination (3 bytes: 1 byte Origen, 1 byte Destino, 1 byte Descuento)
         self.TS_ICFG_ORIGIN_DEST_FORMAT = "3B"
+        self.TS_ICFG_TRANSFERS = "8B"
+        self.TS_ICFG_TRANSFERS_SIZE = struct.calcsize(self.TS_ICFG_TRANSFERS)
         self.TS_ICFG_ORIGIN_DEST_SIZE = struct.calcsize(self.TS_ICFG_ORIGIN_DEST_FORMAT)
 
     def read_binary_file(self):
@@ -112,8 +114,20 @@ class ConfigFileParser(object):
             baEnglishName = ticket[3].decode('latin1').strip('\x00')
             baFrenchName = ticket[4].decode('latin1').strip('\x00')
             baGermanName = ticket[5].decode('latin1').strip('\x00')
+            
+            """baaTransferTimes = [list(ticket[8][i * 8:(i + 1) * 8]) for i in range(8)]
+            baNoEntryTransferTimes = list(ticket[56:64])
+            baTransferPenaltyTimes = list(ticket[64:72])
+            raw_discounts = ticket[72:82]  # 10 DWORDs
+            raw_midle_discounts = ticket[82:92]  # 10 DWORDs """
 
-            baaTransferTimes = [list(ticket[8][i * 8:(i + 1) * 8]) for i in range(8)]
+            baaTransferTimes = []
+            offset += 8
+            for i in range(8):
+                unpacked_data  = struct.unpack_from(self.TS_ICFG_TRANSFERS, data, offset)
+                offset += self.TS_ICFG_TRANSFERS_SIZE
+                baaTransferTimes.append( unpacked_data )
+
             baNoEntryTransferTimes = list(ticket[56:64])
             baTransferPenaltyTimes = list(ticket[64:72])
             raw_discounts = ticket[72:82]  # 10 DWORDs
@@ -121,39 +135,38 @@ class ConfigFileParser(object):
 
             tsaDiscount = [(raw_discounts[i], raw_discounts[i + 1]) for i in range(0, len(raw_discounts), 2)]
             tsaMidleDiscount = [(raw_midle_discounts[i], raw_midle_discounts[i + 1]) for i in range(0, len(raw_midle_discounts), 2)]
-
-            output.append(f"Ticket Code: {ticket[0]}")
-            output.append(f"Fare Type: {ticket[1]}")
-            output.append(f"Spanish Name: {baSpanishName}")
-            output.append(f"English Name: {baEnglishName}")
-            output.append(f"French Name: {baFrenchName}")
-            output.append(f"German Name: {baGermanName}")
-            output.append(f"Representation Type: {ticket[6]}")
-            output.append(f"Area Control: {ticket[7]}")
-            output.append(f"Transfer Times: {baaTransferTimes}")
-            output.append(f"Day Validity: {ticket[9]}")
-            output.append(f"Week Validity: {ticket[10]}")
-            output.append(f"Proprietary Company: {ticket[11]}")
-            output.append(f"Valid Operators: {ticket[12]}")
-            output.append(f"Balance Type: {ticket[13]}")
-            output.append(f"Number of Trips: {ticket[14]}")
-            output.append(f"Balance Period Value: {ticket[15]}")
-            output.append(f"Balance Period Units: {ticket[16]}")
-            output.append(f"Time Validity Exp Type At Sale: {ticket[17]}")
-            output.append(f"Time Validity Begin Type At Val: {ticket[18]}")
-            output.append(f"Time Validity Exp Type At Val: {ticket[19]}")
-            output.append(f"Time Validity Begin At Val Ctrl: {ticket[20]}")
-            output.append(f"Time Validity Exp At Val Ctrl: {ticket[21]}")
-            output.append(f"No Entry Transfer Times: {baNoEntryTransferTimes}")
-            output.append(f"Transfer Penalty Times: {baTransferPenaltyTimes}")
-            output.append(f"Discounts: {tsaDiscount}")
-            output.append(f"Middle Discounts: {tsaMidleDiscount}")
-            output.append(f"Max Entry to Exit Time: {ticket[32]}")
+            
+            output.append(f"Ticket Code: {ticket[0]}\n")
+            output.append(f"Fare Type: {ticket[1]}\n")
+            output.append(f"Spanish Name: {baSpanishName}\n")
+            output.append(f"English Name: {baEnglishName}\n")
+            output.append(f"French Name: {baFrenchName}\n")
+            output.append(f"German Name: {baGermanName}\n")
+            output.append(f"Representation Type: {ticket[6]}\n")
+            output.append(f"Area Control: {ticket[7]}\n")
+            output.append(f"Day Validity: {ticket[9]}\n")
+            output.append(f"Week Validity: {ticket[10]}\n")
+            output.append(f"Proprietary Company: {ticket[11]}\n")
+            output.append(f"Valid Operators: {ticket[12]}\n")
+            output.append(f"Balance Type: {ticket[13]}\n")
+            output.append(f"Number of Trips: {ticket[14]}\n")
+            output.append(f"Balance Period Value: {ticket[15]}\n")
+            output.append(f"Balance Period Units: {ticket[16]}\n")
+            output.append(f"Time Validity Exp Type At Sale: {ticket[17]}\n")
+            output.append(f"Time Validity Begin Type At Val: {ticket[18]}\n")
+            output.append(f"Time Validity Exp Type At Val: {ticket[19]}\n")
+            output.append(f"Time Validity Begin At Val Ctrl: {ticket[20]}\n")
+            output.append(f"Time Validity Exp At Val Ctrl: {ticket[21]}\n")
+            output.append(f"No Entry Transfer Times: {baNoEntryTransferTimes}\n")
+            output.append(f"Transfer Penalty Times: {baTransferPenaltyTimes}\n")
+            output.append(f"Discounts: {tsaDiscount}\n")
+            output.append(f"Middle Discounts: {tsaMidleDiscount}\n")
+            output.append(f"Max Entry to Exit Time: {ticket[32]}\n")
             output.append("-" * 50)
 
             offset += tsICfgTicket_size
 
-        return output
+        return output, baaTransferTimes
 
 
 
@@ -208,7 +221,8 @@ async def read_param_file():
 async def read_param_file():
     configClass = ConfigFileParser("titulosval.dat")
     buffer = configClass.read_binary_file()
-    data = configClass.parse_titulos_file(buffer)
+    data, baaTransferTimes = configClass.parse_titulos_file(buffer)
+    print(baaTransferTimes)
     return {"Ticket size": data[0],
             "Config version": data[1],
             "Ticket Code": data[2],
@@ -219,22 +233,22 @@ async def read_param_file():
             "German Name": data[7],
             "Representation Type": data[8],
             "Area Control": data[9],
-            "Transfer Times": data[10],
-            "Day Validity": data[11],
-            "Week Validity": data[12],
-            "Proprietary Company": data[13],
-            "Valid Operators": data[14],
-            "Balance Type": data[15],
-            "Number of Trips": data[16],
-            "Balance Period Value": data[17],
-            "Balance Period Units": data[18],
-            "Time Validity Exp Type At Sale": data[19],
-            "Time Validity Begin Type At Val": data[20],
-            "Time Validity Exp Type At Val": data[21],
-            "Time Validity Begin At Val Ctrl": data[22],
-            "Time Validity Exp At Val Ctrl": data[23],
-            "No Entry Transfer Times": data[24],
-            "Transfer Penalty Times": data[25],
-            "Discounts": data[26],
-            "Middle Discounts": data[27],
-            "Max Entry to Exit Time": data[28]}
+            "TransferTimes": baaTransferTimes,
+            "Day Validity": data[10],
+            "Week Validity": data[11],
+            "Proprietary Company": data[12],
+            "Valid Operators": data[13],
+            "Balance Type": data[14],
+            "Number of Trips": data[15],
+            "Balance Period Value": data[16],
+            "Balance Period Units": data[17],
+            "Time Validity Exp Type At Sale": data[18],
+            "Time Validity Begin Type At Val": data[19],
+            "Time Validity Exp Type At Val": data[20],
+            "Time Validity Begin At Val Ctrl": data[21],
+            "Time Validity Exp At Val Ctrl": data[22],
+            "No Entry Transfer Times": data[23],
+            "Transfer Penalty Times": data[24],
+            "Discounts": data[25],
+            "Middle Discounts": data[26],
+            "Max Entry to Exit Time": data[27]}
