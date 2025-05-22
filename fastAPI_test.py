@@ -122,16 +122,16 @@ class ConfigFileParser(object):
             raw_midle_discounts = ticket[82:92]  # 10 DWORDs """
 
             baaTransferTimes = []
-            offset += 8
+            offset2 = offset + 8
             for i in range(8):
-                unpacked_data  = struct.unpack_from(self.TS_ICFG_TRANSFERS, data, offset)
-                offset += self.TS_ICFG_TRANSFERS_SIZE
+                unpacked_data  = struct.unpack_from(self.TS_ICFG_TRANSFERS, data, offset2)
+                offset2 += self.TS_ICFG_TRANSFERS_SIZE
                 baaTransferTimes.append( unpacked_data )
 
-            baNoEntryTransferTimes = list(ticket[56:64])
-            baTransferPenaltyTimes = list(ticket[64:72])
-            raw_discounts = ticket[72:82]  # 10 DWORDs
-            raw_midle_discounts = ticket[82:92]  # 10 DWORDs
+            baNoEntryTransferTimes = list(ticket[53])
+            baTransferPenaltyTimes = list(ticket[54])
+            raw_discounts = ticket[62:72]  # 10 DWORDs
+            raw_midle_discounts = ticket[72:82]  # 10 DWORDs
 
             tsaDiscount = [(raw_discounts[i], raw_discounts[i + 1]) for i in range(0, len(raw_discounts), 2)]
             tsaMidleDiscount = [(raw_midle_discounts[i], raw_midle_discounts[i + 1]) for i in range(0, len(raw_midle_discounts), 2)]
@@ -168,7 +168,86 @@ class ConfigFileParser(object):
 
         return output, baaTransferTimes
 
+    def parse_titulos_file2(self, data):
+        titulos = []
+        
+        tsICfgTicket_size = struct.calcsize(self.tsICfgTicket_format)
 
+        version_bytes = data[:2]
+        version = struct.unpack("<H", version_bytes)[0]
+
+        offset = self.HEADER_SIZE
+
+        while offset < len(data):
+            output = []
+            output.append(f"Tamaño esperado de tsICfgTicket: {tsICfgTicket_size} bytes")
+            output.append(f"Version: {version}\n")
+            chunk = data[offset:offset + tsICfgTicket_size]
+
+            if len(chunk) < tsICfgTicket_size:
+                output.append(f"Error: chunk leído ({len(chunk)} bytes) es menor que el tamaño esperado ({tsICfgTicket_size} bytes).")
+                break
+
+            ticket = struct.unpack(self.tsICfgTicket_format, chunk)
+            baSpanishName = ticket[2].decode('latin1').strip('\x00')
+            baEnglishName = ticket[3].decode('latin1').strip('\x00')
+            baFrenchName = ticket[4].decode('latin1').strip('\x00')
+            baGermanName = ticket[5].decode('latin1').strip('\x00')
+            
+            """baaTransferTimes = [list(ticket[8][i * 8:(i + 1) * 8]) for i in range(8)]
+            baNoEntryTransferTimes = list(ticket[56:64])
+            baTransferPenaltyTimes = list(ticket[64:72])
+            raw_discounts = ticket[72:82]  # 10 DWORDs
+            raw_midle_discounts = ticket[82:92]  # 10 DWORDs """
+
+            baaTransferTimes = []
+            offset2 = offset + 8
+            for i in range(8):
+                unpacked_data  = struct.unpack_from(self.TS_ICFG_TRANSFERS, data, offset2)
+                offset2 += self.TS_ICFG_TRANSFERS_SIZE
+                baaTransferTimes.append( unpacked_data )
+
+            baNoEntryTransferTimes = list(ticket[53])
+            baTransferPenaltyTimes = list(ticket[54])
+            raw_discounts = ticket[62:72]  # 10 DWORDs
+            raw_midle_discounts = ticket[72:82]  # 10 DWORDs
+
+            tsaDiscount = [(raw_discounts[i], raw_discounts[i + 1]) for i in range(0, len(raw_discounts), 2)]
+            tsaMidleDiscount = [(raw_midle_discounts[i], raw_midle_discounts[i + 1]) for i in range(0, len(raw_midle_discounts), 2)]
+            
+            output.append(f"Ticket Code: {ticket[0]}\n")
+            output.append(f"Fare Type: {ticket[1]}\n")
+            output.append(f"Spanish Name: {baSpanishName}\n")
+            output.append(f"English Name: {baEnglishName}\n")
+            output.append(f"French Name: {baFrenchName}\n")
+            output.append(f"German Name: {baGermanName}\n")
+            output.append(f"Representation Type: {ticket[6]}\n")
+            output.append(f"Area Control: {ticket[7]}\n")
+            output.append(f"Day Validity: {ticket[9]}\n")
+            output.append(f"Week Validity: {ticket[10]}\n")
+            output.append(f"Proprietary Company: {ticket[11]}\n")
+            output.append(f"Valid Operators: {ticket[12]}\n")
+            output.append(f"Balance Type: {ticket[13]}\n")
+            output.append(f"Number of Trips: {ticket[14]}\n")
+            output.append(f"Balance Period Value: {ticket[15]}\n")
+            output.append(f"Balance Period Units: {ticket[16]}\n")
+            output.append(f"Time Validity Exp Type At Sale: {ticket[17]}\n")
+            output.append(f"Time Validity Begin Type At Val: {ticket[18]}\n")
+            output.append(f"Time Validity Exp Type At Val: {ticket[19]}\n")
+            output.append(f"Time Validity Begin At Val Ctrl: {ticket[20]}\n")
+            output.append(f"Time Validity Exp At Val Ctrl: {ticket[21]}\n")
+            output.append(f"No Entry Transfer Times: {baNoEntryTransferTimes}\n")
+            output.append(f"Transfer Penalty Times: {baTransferPenaltyTimes}\n")
+            output.append(f"Discounts: {tsaDiscount}\n")
+            output.append(f"Middle Discounts: {tsaMidleDiscount}\n")
+            output.append(f"Max Entry to Exit Time: {ticket[32]}\n")
+            output.append("-" * 50)
+
+            offset += tsICfgTicket_size
+            
+            titulos.append(output)
+
+        return titulos, baaTransferTimes
 
 app = FastAPI()
 
@@ -252,3 +331,28 @@ async def read_param_file():
             "Discounts": data[25],
             "Middle Discounts": data[26],
             "Max Entry to Exit Time": data[27]}
+    
+""" @app.get("/titulos2")
+async def read_param_file():
+    configClass = ConfigFileParser("documents/titulosval.dat")
+    buffer = configClass.read_binary_file()
+    data, baaTransferTimes = configClass.parse_titulos_file2(buffer)
+    print(baaTransferTimes)
+    print("data Size:", len(data))
+    for i in range(len(data)):
+        print(data[i])
+    
+    return {"data": data} """
+
+
+@app.get("/titulos2")
+async def read_param_file():
+    configClass = ConfigFileParser("documents/titulosval.dat")
+    buffer = configClass.read_binary_file()
+    data, baaTransferTimes = configClass.parse_titulos_file2(buffer)
+    print(baaTransferTimes)
+    print("data Size:", len(data))
+    for i in range(len(data)):
+        print(data[i])
+    
+    return {"data": data}

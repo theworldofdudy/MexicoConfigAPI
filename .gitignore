@@ -2,6 +2,7 @@
 *.zip
 __pycache__/
 starter-template/*
+venv/*
 
 # Visual code
 .vscode/
