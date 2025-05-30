@@ -18,8 +18,9 @@
         </div>
         <div class="container">
             <div id="data"></div>
-            <a class="waves-effect waves-light btn-large"><i class="material-icons left">cloud</i>paramVal</a>
-            <a class="waves-effect waves-light btn-large"><i class="material-icons right">cloud</i>titulosVal</a>
+            <a id="btnParamVal" class="waves-effect waves-light btn-large"><i class="material-icons left">cloud</i>paramVal</a>
+            <a id="btnTitulosVal" class="waves-effect waves-light btn-large"><i class="material-icons left">cloud</i>titulosVal</a>
+            <a id="btnCtlRegister" class="waves-effect waves-light btn-large"><i class="material-icons left">cloud</i>ctlRegister</a>
 
             <div class="row">
                 <div class="col s12 m6">
@@ -37,6 +38,15 @@
             <div class="collection">
                 <a href="#!" class="collection-item"><span class="badge"></span></a>
             </div>
+            <div id="ctlRegisterWrapper" style="display: none;">
+            <div class="row">
+              <div class="input-field col s12" id="ctlRegisterInput">
+                <textarea id="ctlRegisterTextarea" class="materialize-textarea"></textarea>
+                <label for="ctlRegisterTextarea">Introduzca el registro</label>
+              </div>
+            </div>
+            <a id="btnSendRegister" class="waves-effect waves-light btn-large">Enviar Registro</a>
+          </div>
         </div>
 
         <!--JavaScript at end of body for optimized loading-->

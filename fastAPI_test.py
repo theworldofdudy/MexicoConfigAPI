@@ -3,9 +3,13 @@ import struct
 import sys
 
 from fastapi import FastAPI
+from pydantic import BaseModel
 
 ## backend -> frontend
 from fastapi.middleware.cors import CORSMiddleware
+
+class RegisterInput(BaseModel):
+    registerString: str
 
 class ModelName(str, Enum):
     alexnet = "alexnet"
@@ -248,6 +252,131 @@ class ConfigFileParser(object):
             titulos.append(output)
 
         return titulos, baaTransferTimes
+    
+    
+class RegisterParser(object):
+    def __init__(self, register_string):
+        self.register_string = register_string
+        
+    # Función para obtener un subconjunto de bits
+    def obtener_bits(self, data, start_bit, size_bits):
+        return data[start_bit:start_bit + size_bits]
+
+    # Función para convertir una cadena binaria a decimal
+    def bin_a_decimal(bin_str):
+        return int(bin_str, 2)
+
+    def bits_to_decimal_lsb(self, bits):
+        # 1. Rellenamos a múltiplo de 8
+        bits_padded = bits.zfill((len(bits) + 7) // 8 * 8)
+
+        # 2. Agrupamos en bytes (8 bits), convertimos a int y formateamos a hex
+        byte_list = [int(bits_padded[i:i+8], 2) for i in range(0, len(bits_padded), 8)]
+
+        # 3. Invertimos los bytes (LSB → MSB)
+        reversed_bytes = byte_list[::-1]
+
+        # Convierte a decimal como si fuera un número base-256
+        result = 0
+        for b in reversed_bytes:
+            result = (result << 8) | b
+
+        return result
+
+    def parse(self):
+        # Convertimos la cadena hexadecimal a binario
+        data = bin(int(self.register_string, 16))[2:].zfill(len(self.register_string) * 4)  # Aseguramos que tenga los bits correctos
+
+        print(f"Cadena binaria: {data}")
+        # Revertir la secuencia de bits para tratarla como LSB (Least Significant Bit first)
+        """     data = ''.join(reversed([data[i:i + 8] for i in range(0, len(data), 8)]))
+        data = ''.join(data)
+        print(f"Cadena binaria LSB: {data}") """
+
+        # Definición de las variables con las posiciones en bits y tamaños en bits
+        result = {}
+        
+        #Cabecera 11 bytes. Le quitamos la cabecera a data
+        data = data[88:]  # 11 bytes = 88 bits
+        
+
+        # Asignamos los datos a las variables indicadas (usando posiciones y tamaños en bits)
+        #result['l_bpAux'] = data
+        #result['l_bUidAux'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 0, 56))  # 56 bits
+        result['bType'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 56, 4))  # 4 bits
+        result['bSubType'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 60, 4))  # 4 bits
+        result['bVersion'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 64, 4))  # 4 bits
+        result['bCompany'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 68, 5))  # 5 bits
+        result['bEndOfValidityDay'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 73, 5))  # 5 bits
+        result['bEndOfValidityMonth'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 78, 4))  # 4 bits
+        result['bEndOfValidityYear'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 82, 5))  # 5 bits
+        result['bCardEnabled'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 87, 1))  # 1 bit
+        result['bTransactionNumber'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 88, 4))  # 4 bits
+        result['bEnabledTickets'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 104, 4))  # 4 bits
+        result['bLastTicketUsed'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 108, 2))  # 2 bits
+        result['bCompany_2'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 120, 5))  # 5 bits
+        result['wCode'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 125, 12))  # 12 bits
+        result['bDayValidity'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 137, 4))  # 4 bits
+        result['bWeekValidity'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 141, 4))  # 4 bits
+        result['bFareType'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 145, 4))  # 4 bits
+        result['bFareIndex'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 149, 3))  # 3 bits
+        result['bZoneValidity'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 152, 8))  # 8 bits
+        result['bTypeOfTimeValidityUnits'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 160, 3))  # 3 bits
+        result['bNoOfTimeValidityUnits'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 163, 8))  # 8 bits
+        result['bUseTripsBalance'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 171, 1))  # 1 bit
+        result['bPrevTicketIsExtended'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 184, 1))  # 1 bit
+        result['bPrevTimeValidityDay'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 185, 5))  # 5 bits
+        result['bPrevTimeValidityMonth'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 190, 4))  # 4 bits
+        result['bPrevTimeValidityYear'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 194, 5))  # 5 bits
+        result['bPrevTimeValidityHour'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 199, 5))  # 5 bits
+        result['bPrevTimeValidityMinute'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 204, 6))  # 6 bits
+        result['bPrevTripBalance'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 210, 8))  # 8 bits
+        result['bPrevDayTripCounter'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 218, 3))  # 3 bits
+        result['bPrevLastValidationDay'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 221, 5))  # 5 bits
+        result['bTicketIsExtended'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 240, 1))  # 1 bit
+        result['bTimeValidityDay'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 241, 5))  # 5 bits
+        result['bTimeValidityMonth'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 246, 4))  # 4 bits
+        result['bTimeValidityYear'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 250, 5))  # 5 bits
+        result['bTimeValidityHour'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 255, 5))  # 5 bits
+        result['bTimeValidityMinute'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 260, 6))  # 6 bits
+        result['bTripBalance'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 266, 8))  # 8 bits
+        result['bDayTripCounter'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 274, 3))  # 3 bits
+        result['bLastValidationDay'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 277, 5))  # 5 bits
+        result['bPrevValidationOperator'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 296, 5))  # 5 bits
+        result['bPrevValidationType'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 301, 5))  # 5 bits
+        result['wPrevValidationPlace'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 306, 13))  # 13 bits
+        result['bPrevValidationDay'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 319, 5))  # 5 bits
+        result['bPrevValidationMonth'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 324, 4))  # 4 bits
+        result['bPrevValidationYear'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 328, 5))  # 5 bits
+        result['bPrevValidationHour'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 333, 5))  # 5 bits
+        result['bPrevValidationMinute'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 338, 6))  # 6 bits
+        result['bPrevNoOfPassengersTravelling'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 350, 6))  # 6 bits
+        result['bPrevNoOfPassengersExiting'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 356, 6))  # 6 bits
+        result['bPrevBlackListBit'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 362, 1))  # 1 bit
+        result['bPrevGreyListBit'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 363, 1))  # 1 bit
+        result['bPrevWhiteListBit'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 364, 1))  # 1 bit
+        result['bPrevEntryExitControl'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 365, 1))  # 1 bit
+        result['bOperator'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 376, 5))  # 5 bits
+        result['bType_2'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 381, 5))  # 5 bits
+        result['wValidationPlace'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 386, 13))  # 13 bits
+        result['bValidationDay'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 399, 5))  # 5 bits
+        result['bValidationMonth'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 404, 4))  # 4 bits
+        result['bValidationYear'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 408, 5))  # 5 bits
+        result['bValidationHour'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 413, 5))  # 5 bits
+        result['bValidationMinute'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 418, 6))  # 6 bits
+        result['bValidationSecond'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 424, 6))  # 6 bits
+        result['bNoOfPassengersTravelling'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 430, 6))  # 6 bits
+        result['bNoOfPassengersExiting'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 436, 6))  # 6 bits
+        result['bBlackListBit'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 442, 1))  # 1 bit
+        result['bGreyListBit'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 443, 1))  # 1 bit
+        result['bWhiteListBit'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 444, 1))  # 1 bit
+        result['bEntryExitControl'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 445, 1))  # 1 bit
+
+        result['l_spPurse->dwValue'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 456, 32))  # 32 bit
+        result['dwPurseDiscount'] = self.bits_to_decimal_lsb(self.obtener_bits(data, 488, 32))  # 32 bit
+        result['CRC'] = self.bits_to_decimal_lsb(self.obtener_bits(data, len(data) -16, 16))  # 16 bit
+
+        return result
 
 app = FastAPI()
 
@@ -356,3 +485,30 @@ async def read_param_file():
         print(data[i])
     
     return {"data": data}
+
+
+'''puedo probar con curl
+curl -X POST http://127.0.0.1:8000/register \
+  -H "Content-Type: application/json" \
+  --request POST \
+  -d "{\"registerString\": \"hola desde curl\"}"
+  '''
+  
+@app.post("/register")
+async def register_decoder(register_input: RegisterInput):
+    register_string = register_input.registerString
+    # Aquí puedes procesar el register_string como necesites
+    print(f"Register String: {register_string}")
+    
+    registerClass = RegisterParser(register_string)
+    data = registerClass.parse()  
+    print(data)
+    print("data Size:", len(data))
+
+    # Mostrar algunos resultados
+    for key in data:
+        #print(f"{key}: {result[key]}")
+        value = int(data[key])
+        print(key, "-> dec:", value, "-> hex:", hex(value), "-> bin:", bin(value))
+    
+    return data #devuelve el dict directamente
