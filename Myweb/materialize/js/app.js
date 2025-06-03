@@ -29,11 +29,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const btnTitulosVal = document.getElementById("btnTitulosVal");
     const btnCtlRegister = document.getElementById("btnCtlRegister");
     const btnSendRegister = document.getElementById("btnSendRegister");
-    
+
     btnParamVal.addEventListener("click", function () {
         console.log("Botón paramVal clickeado");
         clearCollection();
-    
+
         fetch(`${API_URL}/param`)
             .then(response => response.json())
             .then(data => {
@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.querySelector(".card-title").innerText = JSON.stringify(data, null, 2);
             })
             .catch(error => console.error("Error fetching data:", error));*/
-    
+
     });
 
 
@@ -89,32 +89,32 @@ document.addEventListener("DOMContentLoaded", function () {
         clearCollection();
 
         fetch(`${API_URL}/titulos2`)
-        .then(response => response.json())
-        .then(data => {
+            .then(response => response.json())
+            .then(data => {
 
-            document.querySelector(".collection").innerHTML = "";
-            
-            const jsondata = data.data;
-            Object.entries(jsondata).forEach(([titulo, index]) => {
-                console.log("Index: ", index, "Titulo: ", titulo);
-                const titItem = document.createElement("a");
-                titItem.href = "#!";
-                titItem.classList.add("collection-tit-item")
+                document.querySelector(".collection").innerHTML = "";
 
-                document.querySelector(".collection").appendChild(titItem);
+                const jsondata = data.data;
+                Object.entries(jsondata).forEach(([titulo, index]) => {
+                    console.log("Index: ", index, "Titulo: ", titulo);
+                    const titItem = document.createElement("a");
+                    titItem.href = "#!";
+                    titItem.classList.add("collection-tit-item")
+
+                    document.querySelector(".collection").appendChild(titItem);
 
                     index.forEach((line, subIndex) => {
-                    const item = document.createElement("a");
-                    item.href = "#!";
-                    item.classList.add("collection-item");
-                    item.textContent = line;
-                    document.querySelector(".collection").appendChild(item);
-                        });
+                        const item = document.createElement("a");
+                        item.href = "#!";
+                        item.classList.add("collection-item");
+                        item.textContent = line;
+                        document.querySelector(".collection").appendChild(item);
+                    });
 
                 }); //  Se cierra correctamente el forEach()
-            document.querySelector(".card-title").innerText = "INFORMACIÓN DE TÍTULOS ACTUALIZADA";
-        }) // Se cierra correctamente el .then()
-        .catch(error => console.error("Error fetching data:", error)); // .catch() está fuera del bloque .then()
+                document.querySelector(".card-title").innerText = "INFORMACIÓN DE TÍTULOS ACTUALIZADA";
+            }) // Se cierra correctamente el .then()
+            .catch(error => console.error("Error fetching data:", error)); // .catch() está fuera del bloque .then()
     });
 
     btnCtlRegister.addEventListener('click', function () {
@@ -140,14 +140,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
     });
-    
+
     btnSendRegister.addEventListener('click', function () {
-        
+
         console.log("Botón Send Register clickeado");
         // Vaciar todo el contenido dinámico
         const collection = document.querySelector(".collection");
         collection.innerHTML = "";
-        
+
         const text = document.getElementById("ctlRegisterTextarea").value;
 
         fetch("http://127.0.0.1:8000/register", {
@@ -157,21 +157,21 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             body: JSON.stringify({ registerString: text })
         })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("data").textContent = data.processed_text;
-            console.log("Data received:", data);
-            
-            Object.entries(data).forEach(([key, value]) => {
-                const item = document.createElement("a");
-                item.href = "#!";
-                item.classList.add("collection-item");
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("data").textContent = data.processed_text;
+                console.log("Data received:", data);
 
-                item.innerHTML = `<span class="badge">${value}</span>${key}`;
-                document.querySelector(".collection").appendChild(item);
+                Object.entries(data).forEach(([key, value]) => {
+                    const item = document.createElement("a");
+                    item.href = "#!";
+                    item.classList.add("collection-item");
+
+                    item.innerHTML = `<span class="badge">${value}</span>${key}`;
+                    document.querySelector(".collection").appendChild(item);
                 });
-        })
-        .catch(error => console.error("Error:", error));
+            })
+            .catch(error => console.error("Error:", error));
     });
 
 
@@ -223,4 +223,4 @@ document.addEventListener("DOMContentLoaded", function () {
         }) // Se cierra correctamente el .then()
         .catch(error => console.error("Error fetching data:", error)); // .catch() está fuera del bloque .then()
     }); */
-    
+
