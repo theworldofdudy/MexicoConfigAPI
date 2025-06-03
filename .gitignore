@@ -3,6 +3,7 @@
 __pycache__/
 starter-template/*
 venv/*
+dist/*
 
 # Visual code
 .vscode/

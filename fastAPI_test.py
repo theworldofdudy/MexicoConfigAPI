@@ -1,12 +1,15 @@
 from enum import Enum
 import struct
 import sys
+import os
 
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 ## backend -> frontend
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, FileResponse
 
 class RegisterInput(BaseModel):
     registerString: str
@@ -374,6 +377,21 @@ class RegisterParser(object):
 
 app = FastAPI()
 
+# Importante si lo convierto a exe. Ruta base para PyInstaller (usa sys._MEIPASS si existe)
+BASE_DIR = getattr(sys, '_MEIPASS', os.path.abspath("."))
+
+
+# Ruta a los recursos estáticos y al index.html. Solo necesario si queremos cargar la web al lanzar localhost en raiz /
+STATIC_DIR = os.path.join(BASE_DIR, "Myweb", "materialize")
+INDEX_PATH = os.path.join(STATIC_DIR, "index.html")
+
+app.mount("/css", StaticFiles(directory=os.path.join(STATIC_DIR, "css")), name="css")
+app.mount("/js", StaticFiles(directory=os.path.join(STATIC_DIR, "js")), name="js")
+app.mount("/images", StaticFiles(directory=os.path.join(STATIC_DIR, "images")), name="images")
+
+
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Cambia "*" por el dominio de tu frontend en producción
@@ -383,8 +401,15 @@ app.add_middleware(
 )
 
 @app.get("/")
-def read_root():
-    return {"message": "¡Hola desde la API de Carlos!"}
+def index():
+    print("Lanzando web")
+    with open(INDEX_PATH, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read(), status_code=200)
+    
+@app.get("/favicon.ico")
+def favicon():
+    return FileResponse(os.path.join(STATIC_DIR, "favicon.ico"))
+
 
 @app.get("/data/{item_id}")
 def read_item(item_id: int, q: str = "hola"):
@@ -507,3 +532,9 @@ async def register_decoder(register_input: RegisterInput):
         print(key, "-> dec:", value, "-> hex:", hex(value), "-> bin:", bin(value))
     
     return data #devuelve el dict directamente
+
+
+if __name__ == "__main__":
+    import uvicorn
+    #uvicorn.run("fastAPI_test:app", host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
